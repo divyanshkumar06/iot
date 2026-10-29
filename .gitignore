@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Generated data (reproducible from code)
+data/generated/*.csv
+data/generated/*.parquet
+
+# Experiment results (can be large)
+results/*.joblib
+results/*.pkl
+
+# Keep gitkeep files
+!results/.gitkeep
+!data/generated/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Streamlit
+.streamlit/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
