@@ -74,25 +74,31 @@ def _generate_node_samples(
     noise     = profile["noise"]
 
     # ── Normal operating condition ──────────────────────────────────────────
-    # Low vibration, stable temperature, consistent RPM
-    norm_rms   = rng.normal(loc=0.8,  scale=0.15 * noise, size=n_normal)
-    norm_peak  = norm_rms + rng.exponential(scale=0.2 * noise, size=n_normal)
-    norm_var   = rng.normal(loc=0.05, scale=0.01 * noise, size=n_normal)
-    norm_freq  = rng.normal(loc=rpm_mean / 60, scale=rpm_std / 60 * noise, size=n_normal)
-    norm_temp  = rng.normal(loc=65.0,  scale=3.0 * noise, size=n_normal)
-    norm_rpm   = rng.normal(loc=rpm_mean, scale=rpm_std,  size=n_normal)
+    # Low-to-moderate vibration, stable temperature, consistent RPM
+    norm_rms   = rng.normal(loc=1.15, scale=0.32 * noise, size=n_normal)
+    norm_peak  = norm_rms + rng.exponential(scale=0.30 * noise, size=n_normal)
+    norm_var   = rng.normal(loc=0.09, scale=0.03 * noise, size=n_normal)
+    norm_freq  = rng.normal(loc=rpm_mean / 60, scale=rpm_std / 50 * noise, size=n_normal)
+    norm_temp  = rng.normal(loc=66.5, scale=5.5 * noise, size=n_normal)
+    norm_rpm   = rng.normal(loc=rpm_mean, scale=rpm_std, size=n_normal)
     norm_label = np.zeros(n_normal, dtype=int)
 
     # ── Faulty condition ────────────────────────────────────────────────────
-    # Higher vibration, elevated temperature, erratic RPM, shifted frequency
-    # Include overlap with normal to make classification non-trivial
-    fault_rms  = rng.normal(loc=2.5,  scale=0.5 * noise,  size=n_fault)
-    fault_peak = fault_rms + rng.exponential(scale=0.8 * noise, size=n_fault)
-    fault_var  = rng.normal(loc=0.35, scale=0.08 * noise, size=n_fault)
-    fault_freq = rng.normal(loc=rpm_mean / 60 * 1.4, scale=rpm_std / 40 * noise, size=n_fault)
-    fault_temp = rng.normal(loc=85.0,  scale=5.0 * noise, size=n_fault)
-    fault_rpm  = rng.normal(loc=rpm_mean * 0.85, scale=rpm_std * 2, size=n_fault)
+    # Elevated vibration, higher temperature, erratic RPM, shifted frequency
+    # Realistic overlap with normal range to make classification challenging
+    fault_rms  = rng.normal(loc=1.85, scale=0.45 * noise, size=n_fault)
+    fault_peak = fault_rms + rng.exponential(scale=0.55 * noise, size=n_fault)
+    fault_var  = rng.normal(loc=0.22, scale=0.07 * noise, size=n_fault)
+    fault_freq = rng.normal(loc=rpm_mean / 60 * 1.3, scale=rpm_std / 40 * noise, size=n_fault)
+    fault_temp = rng.normal(loc=78.5, scale=7.0 * noise, size=n_fault)
+    fault_rpm  = rng.normal(loc=rpm_mean * 0.90, scale=rpm_std * 1.6, size=n_fault)
     fault_label = np.ones(n_fault, dtype=int)
+
+    # Sensor noise / borderline condition (transient spikes and ambiguous states)
+    labels = np.concatenate([norm_label, fault_label])
+    # ~4% borderline overlap / sensor noise
+    noise_mask = rng.random(size=len(labels)) < (0.04 * min(noise, 1.5))
+    labels[noise_mask] = 1 - labels[noise_mask]
 
     # Stack and shuffle
     data = pd.DataFrame({
@@ -102,7 +108,7 @@ def _generate_node_samples(
         "dominant_frequency": np.concatenate([norm_freq, fault_freq]),
         "temperature":        np.concatenate([norm_temp, fault_temp]),
         "rpm":                np.concatenate([norm_rpm,  fault_rpm]),
-        TARGET:               np.concatenate([norm_label, fault_label]),
+        TARGET:               labels,
     })
 
     # Clip to physically plausible ranges
